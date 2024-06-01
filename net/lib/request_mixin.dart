@@ -40,9 +40,9 @@ mixin RequestMixin {
         test: (error) => error is DioException);
   }
 
-
-  Future<T> uploadFile<T>(Uint8List bytes, String path, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
-    final formData = FormData.fromMap({'file': MultipartFile.fromBytes(bytes, filename: 'file')});
+  Future<T> uploadFiles<T>(List<Uint8List> files, String path, Decoder<T> decoder,
+      {Map<String, dynamic>? query}) async {
+    final formData = FormData.fromMap({'files': files.map((e) => MultipartFile.fromBytes(e, filename: 'file')).toList()});
     return await _net
         .post(path, data: formData, queryParameters: query)
         .then((res) => _parse(res.data, decoder))
