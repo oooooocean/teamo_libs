@@ -42,7 +42,7 @@ mixin RequestMixin {
 
   Future<T> uploadFiles<T>(List<Uint8List> files, String path, Decoder<T> decoder,
       {Map<String, dynamic>? query}) async {
-    final formData = FormData.fromMap({'files': files.map((e) => MultipartFile.fromBytes(e, filename: 'file')).toList()});
+    final formData = FormData.fromMap({'files': files.map((e) => MultipartFile.fromBytes(e, filename: 'file.jpeg')).toList()});
     return await _net
         .post(path, data: formData, queryParameters: query)
         .then((res) => _parse(res.data, decoder))
