@@ -53,4 +53,6 @@ mixin S3Mixin {
     if (bytes == null) return null;
     return MemoryImage(Uint8List.fromList(bytes));
   }
+
+  String getFileUrlFromS3({required String fileName}) => 'https://public-teamo-com.s3.amazonaws.com/$fileName';
 }
