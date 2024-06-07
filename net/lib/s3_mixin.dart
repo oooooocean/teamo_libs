@@ -30,11 +30,12 @@ mixin S3Mixin {
   Future<List<String>?> uploadFilesToS3(List<UploadFileItem> files) async {
     final results = (await Future.wait(files.map((e) => uploadFileToS3(bytes: e.bytes, fileName: e.fileName)).toList()))
         .where((e) => e != null)
+        .cast<String>()
         .toList();
     if (results.length != files.length) {
       return null;
     }
-    return results as List<String>;
+    return results;
   }
 
   Future<List<int>?> getFileFromS3({required String fileName}) async {
