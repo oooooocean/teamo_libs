@@ -12,8 +12,7 @@ mixin RequestMixin {
     return _net
         .get(uri, queryParameters: _correctParameters(query))
         .then((res) => _parse(res.data, decoder))
-        .catchError((error) => _parse((error as DioException).response?.data, decoder),
-            test: (error) => error is DioException);
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
@@ -21,8 +20,7 @@ mixin RequestMixin {
         .post(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res.data, decoder))
-        .catchError((error) => _parse((error as DioException).response?.data, decoder),
-            test: (error) => error is DioException);
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
@@ -30,8 +28,7 @@ mixin RequestMixin {
         .patch(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res.data, decoder))
-        .catchError((error) => _parse((error as DioException).response?.data, decoder),
-            test: (error) => error is DioException);
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
@@ -39,14 +36,14 @@ mixin RequestMixin {
         .put(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res.data, decoder))
-        .catchError((error) => _parse((error as DioException).response?.data, decoder),
-            test: (error) => error is DioException);
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> delete<T>(String uri, dynamic body, Decoder<T> decoder) async {
-    return await _net.delete(uri, data: body).then((res) => _parse(res.data, decoder)).catchError(
-        (error) => _parse((error as DioException).response?.data, decoder),
-        test: (error) => error is DioException);
+    return await _net
+        .delete(uri, data: body)
+        .then((res) => _parse(res.data, decoder))
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> uploadFiles<T>(List<Uint8List> files, String path, Decoder<T> decoder,
@@ -56,8 +53,11 @@ mixin RequestMixin {
     return await _net
         .post(path, data: formData, queryParameters: query)
         .then((res) => _parse(res.data, decoder))
-        .catchError((error) => _parse((error as DioException).response?.data, decoder),
-            test: (error) => error is DioException);
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
+  }
+
+  T _receiveError<T>(dynamic error) {
+    throw FlutterError('网络异常: $error');
   }
 
   T _parse<T>(dynamic data, Decoder<T> decoder) {
