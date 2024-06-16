@@ -26,8 +26,8 @@ class Net2 {
     ]);
 
   config({required String baseUrl, required Map<String, dynamic> extraHeaders}) {
-    (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
     this.baseUrl = baseUrl;
     this.extraHeaders = extraHeaders;
+    (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
   }
 }
