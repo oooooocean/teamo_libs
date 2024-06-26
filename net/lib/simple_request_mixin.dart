@@ -11,7 +11,9 @@ mixin SimpleRequestMixin on RequestMixin {
     ValueSetter<Error>? fail,
     String? failTip,
   }) async {
-    EasyLoading.show();
+    if (!EasyLoading.isShow) {
+      EasyLoading.show();
+    }
     return api().then((value) {
       EasyLoading.dismiss();
       if (success != null) success(value);
