@@ -1,5 +1,7 @@
+import 'package:dio/browser.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 import 'interceptors/log.dart';
 import 'interceptors/modify.dart';
 
@@ -28,6 +30,8 @@ class Net2 {
   config({required String baseUrl, required Map<String, dynamic> extraHeaders}) {
     this.baseUrl = baseUrl;
     this.extraHeaders = extraHeaders;
-    (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
+    if (!kIsWeb) {
+      (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
+    }
   }
 }
