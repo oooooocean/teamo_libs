@@ -12,8 +12,8 @@ class Net2 {
 
   factory Net2() => _instance;
 
-  String baseUrl = '';
-  Map<String, dynamic> extraHeaders = {};
+  late String baseUrl;
+  late Map<String, dynamic> extraHeaders;
 
   late final dio = Dio(
     BaseOptions(
