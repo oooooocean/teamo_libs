@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import 'response.dart';
 
 mixin RequestMixin {
-  get _net => Net2().dio;
+  Dio get _net => Net2().dio;
 
   Future<T> get<T>(String uri, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return _net
