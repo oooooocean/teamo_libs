@@ -57,13 +57,16 @@ mixin RequestMixin {
   }
 
   T _receiveError<T>(dynamic error) {
+    if ((error as DioException).response?.data != null) {
+      return _parse(error.response?.data, null);
+    }
     throw FlutterError('网络异常: $error');
   }
 
-  T _parse<T>(dynamic data, Decoder<T> decoder) {
+  T _parse<T>(dynamic data, Decoder<T>? decoder) {
     try {
       final netRes = NetResponse.fromJson(data);
-      if (netRes.code != NetCode.success) {
+      if (netRes.code != NetCode.success || decoder == null) {
         throw netRes;
       }
       return decoder(netRes.data);
