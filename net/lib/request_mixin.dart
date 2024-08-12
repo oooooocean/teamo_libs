@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:net/interceptors/modify.dart';
 import 'net_dio.dart';
 import 'package:dio/dio.dart';
 import 'response.dart';
@@ -59,6 +60,9 @@ mixin RequestMixin {
   T _receiveError<T>(dynamic error) {
     if ((error as DioException).response?.data != null) {
       return _parse(error.response?.data, null);
+    }
+    if (error is TimeoutError) {
+      throw error;
     }
     throw FlutterError('网络异常: $error');
   }
