@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart' hide FormData, MultipartFile;
-import 'package:net/interceptors/modify.dart';
+import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 import 'net_dio.dart';
 import 'package:dio/dio.dart';
 import 'response.dart';
@@ -12,7 +11,7 @@ mixin RequestMixin {
   Future<T> get<T>(String uri, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return _net
         .get(uri, queryParameters: _correctParameters(query))
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
@@ -20,7 +19,7 @@ mixin RequestMixin {
     return await _net
         .post(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
@@ -28,7 +27,7 @@ mixin RequestMixin {
     return await _net
         .patch(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
@@ -36,14 +35,14 @@ mixin RequestMixin {
     return await _net
         .put(uri,
             data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> delete<T>(String uri, dynamic body, Decoder<T> decoder) async {
     return await _net
         .delete(uri, data: body)
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
@@ -53,42 +52,34 @@ mixin RequestMixin {
         FormData.fromMap({'files': files.map((e) => MultipartFile.fromBytes(e, filename: 'file.jpeg')).toList()});
     return await _net
         .post(path, data: formData, queryParameters: query)
-        .then((res) => _parse(res.data, decoder))
+        .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   T _receiveError<T>(dynamic error) {
-    if ((error as DioException).response?.data != null) {
-      return _parse(error.response?.data, null);
+    if (error.response != null) {
+      return _parse(error.response!, null);
     }
-    if (error is TimeoutError) {
-      throw error;
-    }
-    throw FlutterError('网络异常: $error');
+    throw NetError()..message = error.toString();
   }
 
-  T _parse<T>(dynamic data, Decoder<T>? decoder) {
-    try {
-      final netRes = NetResponse.fromJson(data);
-      if (netRes.code != NetCode.success || decoder == null) {
-        throw netRes;
-      }
-      return decoder(netRes.data);
-    } catch (error) {
-      if (error is NetResponse) {
-        rethrow;
-      } else {
-        if (!kReleaseMode) rethrow;
-        throw FlutterError('服务端响应错误: $error');
-      }
+  T _parse<T>(Response res, Decoder<T>? decoder) {
+    if (res.statusCode == null) {
+      throw NetError()..message = '未知错误, 请稍后重试';
     }
+    if (res.statusCode! >= 200 && res.statusCode! < 300 && decoder != null) {
+      return decoder(res.data);
+    }
+    throw NetError.fromJson(res.data)..code = NetCode.fromStatusCode(res.statusCode!);
   }
 
-  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) => params?.map((key, value) {
-        var correctValue = value;
-        if (value is! List) {
-          correctValue = value.toString();
-        }
-        return MapEntry(key, correctValue);
-      });
+  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) => params?.map(
+        (key, value) {
+          var correctValue = value;
+          if (value is! List) {
+            correctValue = value.toString();
+          }
+          return MapEntry(key, correctValue);
+        },
+      );
 }

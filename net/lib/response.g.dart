@@ -6,22 +6,11 @@ part of 'response.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-NetResponse _$NetResponseFromJson(Map<String, dynamic> json) => NetResponse(
-      $enumDecode(_$NetCodeEnumMap, json['code'],
-          unknownValue: NetCode.unknownError),
-      json['data'],
-    )..message = json['message'] as String;
+NetError _$NetErrorFromJson(Map<String, dynamic> json) => NetError()
+  ..exception = json['exception'] as String?
+  ..errorId = json['errorId'] as String?;
 
-Map<String, dynamic> _$NetResponseToJson(NetResponse instance) =>
-    <String, dynamic>{
-      'message': instance.message,
-      'code': _$NetCodeEnumMap[instance.code]!,
-      'data': instance.data,
+Map<String, dynamic> _$NetErrorToJson(NetError instance) => <String, dynamic>{
+      'exception': instance.exception,
+      'errorId': instance.errorId,
     };
-
-const _$NetCodeEnumMap = {
-  NetCode.success: 0,
-  NetCode.clientError: 400,
-  NetCode.authFail: 401,
-  NetCode.unknownError: -1,
-};

@@ -1,38 +1,53 @@
+
 import 'package:json_annotation/json_annotation.dart';
 
 part 'response.g.dart';
 
 enum NetCode {
-  @JsonValue(0)
   success,
-  @JsonValue(400)
   clientError,
-  @JsonValue(401)
   authFail,
-  @JsonValue(-1)
+  serverError,
   unknownError;
 
   bool get shouldRelaunch => [NetCode.authFail].contains(this);
-}
 
-class NetError extends Error {
-  String message = '';
-
-  @override
-  String toString() => message;
+  static fromStatusCode(int statusCode) {
+    if (statusCode >= 200 && statusCode < 300) {
+      return NetCode.success;
+    } else if (statusCode == 401) {
+      return NetCode.authFail;
+    } else if (statusCode >= 400 && statusCode < 500) {
+      return NetCode.clientError;
+    } else if (statusCode >= 500) {
+      return NetCode.serverError;
+    } else {
+      return NetCode.unknownError;
+    }
+  }
 }
 
 @JsonSerializable()
-class NetResponse extends NetError {
-  @JsonKey(unknownEnumValue: NetCode.unknownError)
-  NetCode code;
-  dynamic data;
+class NetError extends Error {
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  NetCode code = NetCode.unknownError;
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  String? message;
+  String? exception;
+  String? errorId;
 
-  NetResponse(this.code, this.data);
+  @override
+  String toString() => message ?? exception ?? '';
 
-  factory NetResponse.fromJson(Map<String, dynamic> json) => _$NetResponseFromJson(json);
+  NetError();
 
-  Map<String, dynamic> toJson() => _$NetResponseToJson(this);
+  factory NetError.fromJson(Map<String, dynamic> json) {
+    final error = _$NetErrorFromJson(json);
+    if (json['messages'] is List<String>) {
+      error.message = (json['messages'] as List<String>).firstOrNull ?? '';
+    }
+    return error;
+  }
 }
 
 class FileUploadError extends Error {

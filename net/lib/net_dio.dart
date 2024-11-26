@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:net/response.dart';
 import 'interceptors/log.dart';
 import 'interceptors/modify.dart';
 
 class Net2 {
+  ValueSetter<NetCode>? errorHandler;
+
   static final Net2 _instance = Net2._init();
 
   Net2._init();
@@ -26,9 +29,13 @@ class Net2 {
       Net2LogInterceptor(),
     ]);
 
-  config({required String baseUrl, required Map<String, dynamic> extraHeaders}) {
+  config(
+      {required String baseUrl,
+      required Map<String, dynamic> extraHeaders,
+      ValueSetter<NetCode>? defaultErrorHandler}) {
     this.baseUrl = baseUrl;
     this.extraHeaders = extraHeaders;
+    errorHandler = defaultErrorHandler;
     if (!kIsWeb) {
       (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
     }
