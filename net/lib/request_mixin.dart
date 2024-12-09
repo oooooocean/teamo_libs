@@ -17,24 +17,21 @@ mixin RequestMixin {
 
   Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .post(uri,
-            data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .post(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .patch(uri,
-            data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .patch(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
   Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .put(uri,
-            data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .put(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
@@ -46,12 +43,28 @@ mixin RequestMixin {
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> uploadFiles<T>(List<Uint8List> files, String path, Decoder<T> decoder,
-      {Map<String, dynamic>? query}) async {
-    final formData =
-        FormData.fromMap({'files': files.map((e) => MultipartFile.fromBytes(e, filename: 'file.jpeg')).toList()});
+  Future<T> uploadFiles<T>(List<Uint8List> files, String uri, String fileName, Decoder<T> decoder,
+      {Map<String, dynamic>? query, Map<String, dynamic>? body}) async {
+    final fileBytes = files.map((e) => MultipartFile.fromBytes(e, filename: fileName)).toList();
+    final formData = FormData.fromMap({'files': fileBytes, if (body != null) ...body});
     return await _net
-        .post(path, data: formData, queryParameters: query)
+        .post(uri, data: formData, queryParameters: query)
+        .then((res) => _parse(res, decoder))
+        .catchError(_receiveError<T>, test: (error) => error is DioException);
+  }
+
+  Future<T> uploadFile<T>(String filePath, String endPoint, Decoder<T> decoder,
+      {Map<String, dynamic>? query, Map<String, dynamic>? body, String? fileName, String? contentType}) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromFile(
+        filePath,
+        filename: fileName,
+        contentType: contentType != null ? DioMediaType.parse(contentType) : null,
+      ),
+      if (body != null) ...body
+    });
+    return await _net
+        .post(endPoint, data: formData, queryParameters: query)
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
