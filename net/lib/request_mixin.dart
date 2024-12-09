@@ -8,30 +8,43 @@ import 'response.dart';
 mixin RequestMixin {
   Dio get _net => Net2().dio;
 
-  Future<T> get<T>(String uri, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
+  Future<T> get<T>(String uri, Decoder<T> decoder,
+      {Map<String, dynamic>? query}) async {
     return _net
         .get(uri, queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
+  Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder,
+      {Map<String, dynamic>? query}) async {
     return await _net
-        .post(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .post(uri,
+            data: body,
+            options: Options(contentType: 'application/json'),
+            queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
+  Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder,
+      {Map<String, dynamic>? query}) async {
     return await _net
-        .patch(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .patch(uri,
+            data: body,
+            options: Options(contentType: 'application/json'),
+            queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
+  Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder,
+      {Map<String, dynamic>? query}) async {
     return await _net
-        .put(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
+        .put(uri,
+            data: body,
+            options: Options(contentType: 'application/json'),
+            queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
@@ -43,10 +56,14 @@ mixin RequestMixin {
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> uploadFiles<T>(List<Uint8List> files, String uri, String fileName, Decoder<T> decoder,
+  Future<T> uploadFiles<T>(
+      List<Uint8List> files, String uri, String fileName, Decoder<T> decoder,
       {Map<String, dynamic>? query, Map<String, dynamic>? body}) async {
-    final fileBytes = files.map((e) => MultipartFile.fromBytes(e, filename: fileName)).toList();
-    final formData = FormData.fromMap({'files': fileBytes, if (body != null) ...body});
+    final fileBytes = files
+        .map((e) => MultipartFile.fromBytes(e, filename: fileName))
+        .toList();
+    final formData =
+        FormData.fromMap({'files': fileBytes, if (body != null) ...body});
     return await _net
         .post(uri, data: formData, queryParameters: query)
         .then((res) => _parse(res, decoder))
@@ -54,12 +71,16 @@ mixin RequestMixin {
   }
 
   Future<T> uploadFile<T>(String filePath, String endPoint, Decoder<T> decoder,
-      {Map<String, dynamic>? query, Map<String, dynamic>? body, String? fileName, String? contentType}) async {
+      {Map<String, dynamic>? query,
+      Map<String, dynamic>? body,
+      String? fileName,
+      String? contentType}) async {
     final formData = FormData.fromMap({
-      'file': MultipartFile.fromFile(
+      'file': await MultipartFile.fromFile(
         filePath,
         filename: fileName,
-        contentType: contentType != null ? DioMediaType.parse(contentType) : null,
+        contentType:
+            contentType != null ? DioMediaType.parse(contentType) : null,
       ),
       if (body != null) ...body
     });
@@ -83,10 +104,12 @@ mixin RequestMixin {
     if (res.statusCode! >= 200 && res.statusCode! < 300 && decoder != null) {
       return decoder(res.data);
     }
-    throw NetError.fromJson(res.data)..code = NetCode.fromStatusCode(res.statusCode!);
+    throw NetError.fromJson(res.data)
+      ..code = NetCode.fromStatusCode(res.statusCode!);
   }
 
-  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) => params?.map(
+  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) =>
+      params?.map(
         (key, value) {
           var correctValue = value;
           if (value is! List) {
