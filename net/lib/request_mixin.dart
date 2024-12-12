@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile, Response;
+import 'package:path_provider/path_provider.dart';
 import 'net_dio.dart';
 import 'package:dio/dio.dart';
 import 'response.dart';
@@ -88,6 +89,12 @@ mixin RequestMixin {
         .post(endPoint, data: formData, queryParameters: query)
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
+  }
+
+  Future download(String endPoint, String savePath, {Map<String, dynamic>? query, Function(int, int)? onProgress}) async {
+    return _net
+        .download(endPoint, savePath, queryParameters: query, onReceiveProgress: onProgress)
+        .catchError(_receiveError<dynamic>, test: (error) => error is DioException);
   }
 
   T _receiveError<T>(dynamic error) {
