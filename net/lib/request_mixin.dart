@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 import 'package:path_provider/path_provider.dart';
@@ -6,6 +8,8 @@ import 'net_dio.dart';
 import 'package:dio/dio.dart';
 import 'response.dart';
 import 'dart:io';
+
+typedef ZipFile = ({String filename, String content});
 
 mixin RequestMixin {
   Dio get _net => Net2().dio;
@@ -74,43 +78,58 @@ mixin RequestMixin {
   Future download(String endPoint, String savePath, {Map<String, dynamic>? query, Function(int, int)? onProgress}) async {
     final res = await _net
         .get(
-      endPoint,
-      queryParameters: query,
-      onReceiveProgress: onProgress,
-      options: Options(
-          headers: {'accept': 'application/octet-stream'},
-          responseType: ResponseType.bytes
-      ),
-    ).catchError(_receiveError<dynamic>, test: (error) => error is DioException);
+          endPoint,
+          queryParameters: query,
+          onReceiveProgress: onProgress,
+          options: Options(headers: {'accept': 'application/octet-stream'}, responseType: ResponseType.bytes),
+        )
+        .catchError(_receiveError<dynamic>, test: (error) => error is DioException);
     final file = File(savePath);
     final fileHandler = file.openSync(mode: FileMode.write);
     fileHandler.writeFromSync(res.data);
     await fileHandler.close();
   }
 
+  Future<List<ZipFile>> downloadZipAndDecode(String endPoint, {Map<String, dynamic>? query, Function(int, int)? onProgress}) async {
+    final res = await _net
+        .get(
+          endPoint,
+          queryParameters: query,
+          onReceiveProgress: onProgress,
+          options: Options(headers: {'accept': 'application/octet-stream'}, responseType: ResponseType.bytes),
+        )
+        .catchError(_receiveError<dynamic>, test: (error) => error is DioException);
+    final archive = ZipDecoder().decodeBytes(res.data);
+    final ret = <ZipFile>[];
+    for (final entry in archive.where((e) => e.isFile)) {
+      final bytes = entry.readBytes();
+      if (bytes == null) continue;
+      final name = entry.name;
+      final content = utf8.decode(bytes.toList());
+      ret.add((filename: name, content: content));
+    }
+    return ret;
+  }
+
   T _receiveError<T>(dynamic error) {
     if (error.response != null) {
       return _parse(error.response!, null);
     }
-    throw NetError()
-      ..message = error.toString();
+    throw NetError()..message = error.toString();
   }
 
   T _parse<T>(Response res, Decoder<T>? decoder) {
     if (res.statusCode == null) {
-      throw NetError()
-        ..message = '未知错误, 请稍后重试';
+      throw NetError()..message = '未知错误, 请稍后重试';
     }
     if (res.statusCode! >= 200 && res.statusCode! < 300 && decoder != null) {
       return decoder(res.data);
     }
-    throw NetError.fromJson(res.data)
-      ..code = NetCode.fromStatusCode(res.statusCode!);
+    throw NetError.fromJson(res.data)..code = NetCode.fromStatusCode(res.statusCode!);
   }
 
-  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) =>
-      params?.map(
-            (key, value) {
+  Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) => params?.map(
+        (key, value) {
           var correctValue = value;
           if (value is! List) {
             correctValue = value.toString();
