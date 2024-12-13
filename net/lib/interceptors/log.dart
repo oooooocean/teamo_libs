@@ -34,6 +34,7 @@ class Net2LogInterceptor extends Interceptor {
 
   /// 记录响应
   _logResponse(Response res) {
+    if (res.requestOptions.responseType != ResponseType.json) return;
     final jsonString = json.encode(res.data);
     log("---- 响应 ----\npath: ${res.requestOptions.path}\ndata: $jsonString");
   }

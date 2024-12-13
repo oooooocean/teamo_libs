@@ -5,47 +5,35 @@ import 'package:path_provider/path_provider.dart';
 import 'net_dio.dart';
 import 'package:dio/dio.dart';
 import 'response.dart';
+import 'dart:io';
 
 mixin RequestMixin {
   Dio get _net => Net2().dio;
 
-  Future<T> get<T>(String uri, Decoder<T> decoder,
-      {Map<String, dynamic>? query}) async {
+  Future<T> get<T>(String uri, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return _net
         .get(uri, queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder,
-      {Map<String, dynamic>? query}) async {
+  Future<T> post<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .post(uri,
-            data: body,
-            options: Options(contentType: 'application/json'),
-            queryParameters: _correctParameters(query))
+        .post(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder,
-      {Map<String, dynamic>? query}) async {
+  Future<T> patch<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .patch(uri,
-            data: body,
-            options: Options(contentType: 'application/json'),
-            queryParameters: _correctParameters(query))
+        .patch(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder,
-      {Map<String, dynamic>? query}) async {
+  Future<T> put<T>(String uri, dynamic body, Decoder<T> decoder, {Map<String, dynamic>? query}) async {
     return await _net
-        .put(uri,
-            data: body,
-            options: Options(contentType: 'application/json'),
-            queryParameters: _correctParameters(query))
+        .put(uri, data: body, options: Options(contentType: 'application/json'), queryParameters: _correctParameters(query))
         .then((res) => _parse(res, decoder))
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
@@ -57,14 +45,10 @@ mixin RequestMixin {
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
-  Future<T> uploadFiles<T>(
-      List<Uint8List> files, String uri, String fileName, Decoder<T> decoder,
+  Future<T> uploadFiles<T>(List<Uint8List> files, String uri, String fileName, Decoder<T> decoder,
       {Map<String, dynamic>? query, Map<String, dynamic>? body}) async {
-    final fileBytes = files
-        .map((e) => MultipartFile.fromBytes(e, filename: fileName))
-        .toList();
-    final formData =
-        FormData.fromMap({'files': fileBytes, if (body != null) ...body});
+    final fileBytes = files.map((e) => MultipartFile.fromBytes(e, filename: fileName)).toList();
+    final formData = FormData.fromMap({'files': fileBytes, if (body != null) ...body});
     return await _net
         .post(uri, data: formData, queryParameters: query)
         .then((res) => _parse(res, decoder))
@@ -72,16 +56,12 @@ mixin RequestMixin {
   }
 
   Future<T> uploadFile<T>(String filePath, String endPoint, Decoder<T> decoder,
-      {Map<String, dynamic>? query,
-      Map<String, dynamic>? body,
-      String? fileName,
-      String? contentType}) async {
+      {Map<String, dynamic>? query, Map<String, dynamic>? body, String? fileName, String? contentType}) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
         filePath,
         filename: fileName,
-        contentType:
-            contentType != null ? DioMediaType.parse(contentType) : null,
+        contentType: contentType != null ? DioMediaType.parse(contentType) : null,
       ),
       if (body != null) ...body
     });
@@ -92,21 +72,34 @@ mixin RequestMixin {
   }
 
   Future download(String endPoint, String savePath, {Map<String, dynamic>? query, Function(int, int)? onProgress}) async {
-    return _net
-        .download(endPoint, savePath, queryParameters: query, onReceiveProgress: onProgress)
-        .catchError(_receiveError<dynamic>, test: (error) => error is DioException);
+    final res = await _net
+        .get(
+      endPoint,
+      queryParameters: query,
+      onReceiveProgress: onProgress,
+      options: Options(
+          headers: {'accept': 'application/octet-stream'},
+          responseType: ResponseType.bytes
+      ),
+    ).catchError(_receiveError<dynamic>, test: (error) => error is DioException);
+    final file = File(savePath);
+    final fileHandler = file.openSync(mode: FileMode.write);
+    fileHandler.writeFromSync(res.data);
+    await fileHandler.close();
   }
 
   T _receiveError<T>(dynamic error) {
     if (error.response != null) {
       return _parse(error.response!, null);
     }
-    throw NetError()..message = error.toString();
+    throw NetError()
+      ..message = error.toString();
   }
 
   T _parse<T>(Response res, Decoder<T>? decoder) {
     if (res.statusCode == null) {
-      throw NetError()..message = '未知错误, 请稍后重试';
+      throw NetError()
+        ..message = '未知错误, 请稍后重试';
     }
     if (res.statusCode! >= 200 && res.statusCode! < 300 && decoder != null) {
       return decoder(res.data);
@@ -117,7 +110,7 @@ mixin RequestMixin {
 
   Map<String, dynamic>? _correctParameters(Map<String, dynamic>? params) =>
       params?.map(
-        (key, value) {
+            (key, value) {
           var correctValue = value;
           if (value is! List) {
             correctValue = value.toString();
