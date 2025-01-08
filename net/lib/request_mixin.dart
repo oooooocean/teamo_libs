@@ -115,7 +115,7 @@ mixin RequestMixin {
     if (error.response != null) {
       return _parse(error.response!, null);
     }
-    throw NetError()..message = error.toString();
+    throw NetError()..message = '未知错误, 请稍后重试';
   }
 
   T _parse<T>(Response res, Decoder<T>? decoder) {
