@@ -9,18 +9,25 @@ mixin SimpleRequestMixin on RequestMixin {
     required ValueGetter<Future<T>> api,
     ValueSetter<T>? success,
     ValueSetter<Error>? fail,
+    bool showSuccessTip = true,
     String? failTip,
   }) async {
+    var needDismissByThisSession = true;
     if (!EasyLoading.isShow) {
       EasyLoading.show();
+    } else {
+      // 此时弹窗已经由其他业务弹出来了, 这里就不需要处理dismiss, 否则会导致其他业务页面弹框不正常
+      needDismissByThisSession = false;
     }
-    return api().then((value) {
-      EasyLoading.dismiss();
+    return api().then((value) async {
+      if (showSuccessTip) {
+        EasyLoading.showSuccess('Success');
+      } else if (needDismissByThisSession) {
+        await EasyLoading.dismiss();
+      }
       if (success != null) success(value);
-
       return value;
-    }).catchError((error) {
-      EasyLoading.dismiss();
+    }).catchError((error) async {
       EasyLoading.showToast(failTip ?? error.toString());
       if (fail != null) fail(error);
       if (!const bool.fromEnvironment("dart.vm.product")) throw error;

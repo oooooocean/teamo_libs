@@ -27,6 +27,17 @@ mixin S3Mixin {
     }
   }
 
+  Future<String?> uploadFileStreamToS3({required Stream<Uint8List> data, required String fileName}) async {
+    final randomName = '${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
+    try {
+      await s3.putObject(bucket, randomName, data);
+      return randomName;
+    } catch (error) {
+      print('S3文件上传失败: $error');
+      return null;
+    }
+  }
+
   Future<List<String>?> uploadFilesToS3(List<UploadFileItem> files) async {
     final results = (await Future.wait(files.map((e) => uploadFileToS3(bytes: e.bytes, fileName: e.fileName)).toList()))
         .where((e) => e != null)

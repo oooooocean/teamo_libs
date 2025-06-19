@@ -17,12 +17,15 @@ class Net2Interceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (response.statusCode == 401) {}
     super.onResponse(response, handler);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.response?.statusCode == 401) {
+      Net2().onError(err.response!);
+      return;
+    }
     if ([DioExceptionType.connectionTimeout, DioExceptionType.receiveTimeout, DioExceptionType.sendTimeout]
         .contains(err.type)) {
       super.onError(TimeoutError(requestOptions: err.requestOptions), handler);

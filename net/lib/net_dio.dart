@@ -13,6 +13,7 @@ class Net2 {
 
   late String baseUrl;
   late Map<String, dynamic> extraHeaders;
+  late ValueSetter<Response> onError;
 
   late final dio = Dio(
     BaseOptions(
@@ -26,9 +27,14 @@ class Net2 {
       Net2LogInterceptor(),
     ]);
 
-  config({required String baseUrl, required Map<String, dynamic> extraHeaders}) {
+  clear() {
+    extraHeaders.clear();
+  }
+
+  config({required String baseUrl, required Map<String, dynamic> extraHeaders, required ValueSetter<Response> onError}) {
     this.baseUrl = baseUrl;
     this.extraHeaders = extraHeaders;
+    this.onError = onError;
     if (!kIsWeb) {
       (dio.httpClientAdapter as IOHttpClientAdapter).validateCertificate = (_, __, ___) => true;
     }
