@@ -8,7 +8,7 @@ const bucket = 'public-teamo-com';
 typedef UploadFileItem = ({Uint8List bytes, String fileName});
 
 mixin S3Mixin {
-  Future<String?> uploadFileToS3({required Uint8List bytes, required String fileName}) async {
+  Future<String?> uploadFileToS3({required Uint8List bytes, required String fileName, int count = 0}) async {
     final randomName = '${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
     try {
       final url = (await Net2().dio.post('file/url/', data: [randomName], options: Options(contentType: 'application/json'))).data['data'][0];
@@ -16,7 +16,10 @@ mixin S3Mixin {
       return randomName;
     } catch (error) {
       print('S3文件上传失败: $error');
-      return null;
+      if (count >= 1) {
+        return null;
+      }
+      return uploadFileToS3(bytes: bytes, fileName: fileName, count: 1); // 重试一次
     }
   }
 
