@@ -8,10 +8,17 @@ const bucket = 'public-teamo-com';
 typedef UploadFileItem = ({Uint8List bytes, String fileName});
 
 mixin S3Mixin {
-  Future<String?> uploadFileToS3({required Uint8List bytes, required String fileName, int count = 0}) async {
-    final randomName = '${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
+  Future<String?> uploadFileToS3(
+      {required Uint8List bytes, required String fileName, int count = 0, String? bucket, String? prefix}) async {
+    final randomName = '${prefix ?? ''}${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
     try {
-      final url = (await Net2().dio.post('file/url/', data: [randomName], options: Options(contentType: 'application/json'))).data['data'][0];
+      final url = (await Net2().dio.post('file/url/',
+              data: {
+                'fileNames': [randomName],
+                'bucket': bucket ?? 'public-teamo-com'
+              },
+              options: Options(contentType: 'application/json')))
+          .data['data'][0];
       await Dio().putUri(Uri.parse(url), data: bytes, options: Options(contentType: 'application/octet-stream'));
       return randomName;
     } catch (error) {
@@ -23,10 +30,21 @@ mixin S3Mixin {
     }
   }
 
-  Future<String?> uploadFileStreamToS3({required Stream<Uint8List> data, required String fileName, required int fileLength}) async {
-    final randomName = '${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
+  Future<String?> uploadFileStreamToS3(
+      {required Stream<Uint8List> data,
+      required String fileName,
+      required int fileLength,
+      String? bucket,
+      String? prefix}) async {
+    final randomName = '${prefix ?? ''}${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_${fileName}';
     try {
-      final url = (await Net2().dio.post('file/url/', data: [randomName], options: Options(contentType: 'application/json'))).data['data'][0];
+      final url = (await Net2().dio.post('file/url/',
+              data: {
+                'fileNames': [randomName],
+                'bucket': bucket ?? 'public-teamo-com'
+              },
+              options: Options(contentType: 'application/json')))
+          .data['data'][0];
       await Dio().putUri(Uri.parse(url),
           data: data, options: Options(contentType: 'application/octet-stream', headers: {Headers.contentLengthHeader: fileLength.toString()}));
       return randomName;
@@ -47,5 +65,5 @@ mixin S3Mixin {
     return results;
   }
 
-  String getFileUrlFromS3({required String fileName}) => 'https://public-teamo-com.s3.amazonaws.com/$fileName';
+  String getFileUrlFromS3({required String fileName, String? bucket}) => 'https://${bucket ?? "public-teamo-com"}.s3.amazonaws.com/$fileName';
 }
