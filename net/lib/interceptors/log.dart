@@ -24,23 +24,40 @@ class Net2LogInterceptor extends Interceptor {
   /// 记录请求
   _logRequest(RequestOptions request) async {
     var str = "---- 请求 ----\nmethod: ${request.method}\nurl: ${request.uri}\nquery: ${request.queryParameters}";
-    if (!['post', 'put'].contains(request.method.toLowerCase()) || request.headers['content-type'] != 'application/json') {
-      log(str);
-      return;
+    final shouldLogBody =
+        ['post', 'put', 'patch'].contains(request.method.toLowerCase()) && request.headers['content-type'] == 'application/json';
+    if (shouldLogBody) {
+      try {
+        final body = await request.data;
+        str += '\nbody: ${_encodeSafely(body)}';
+      } catch (error) {
+        str += '\nbody: <unserializable: $error>';
+      }
     }
-    str += '\nbody: ${const JsonEncoder().convert(await request.data)}';
     log(str);
   }
 
   /// 记录响应
   _logResponse(Response res) {
-    final jsonString = json.encode(res.data);
-    log("---- 响应 ----\npath: ${res.requestOptions.path}\ndata: $jsonString");
+    log("---- 响应 ----\npath: ${res.requestOptions.path}\ndata: ${_encodeSafely(res.data)}");
   }
 
   /// 记录错误
   _logError(DioException exception) async {
-    final message = "---- 😈响应错误😈 ----\npath: ${exception.requestOptions.path} statusCode: ${exception.response?.statusCode} response: ${json.encode(exception.response?.data)} error: $exception";
+    final message =
+        "---- 😈响应错误😈 ----\npath: ${exception.requestOptions.path} statusCode: ${exception.response?.statusCode} response: ${_encodeSafely(exception.response?.data)} error: $exception";
     log(message);
+  }
+
+  String _encodeSafely(dynamic data) {
+    if (data == null) return 'null';
+    if (data is ResponseBody) {
+      return 'ResponseBody(stream: ${data.stream != null ? 'open' : 'closed'})';
+    }
+    try {
+      return json.encode(data);
+    } catch (_) {
+      return data.toString();
+    }
   }
 }

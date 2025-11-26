@@ -19,7 +19,7 @@ class Net2 {
     BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 60),
       sendTimeout: const Duration(seconds: 20),
     ),
   )..interceptors.addAll([
