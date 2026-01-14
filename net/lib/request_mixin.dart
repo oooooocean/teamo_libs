@@ -181,7 +181,7 @@ mixin RequestMixin {
       headers: {
         'Accept': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        if (!kIsWeb) 'Connection': 'keep-alive',
         if (headers != null) ...headers,
       },
     );
