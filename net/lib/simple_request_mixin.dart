@@ -27,10 +27,6 @@ mixin SimpleRequestMixin on RequestMixin {
       }
       if (success != null) success(value);
       return value;
-    }).catchError((error) async {
-      EasyLoading.showToast(failTip ?? error.toString());
-      if (fail != null) fail(error);
-      if (!const bool.fromEnvironment("dart.vm.product")) throw error;
     });
   }
 }
