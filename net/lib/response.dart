@@ -1,3 +1,4 @@
+import 'dart:convert';
 
 import 'package:json_annotation/json_annotation.dart';
 
@@ -48,6 +49,38 @@ class NetError extends Error {
     }
     return error;
   }
+}
+
+class NetErrorEvent {
+  final String method;
+  final Uri uri;
+  final Map<String, dynamic> headers;
+  final dynamic requestBody;
+  final int? statusCode;
+  final dynamic responseBody;
+  final String errorMessage;
+  final DateTime timestamp;
+
+  NetErrorEvent({
+    required this.method,
+    required this.uri,
+    required this.headers,
+    this.requestBody,
+    this.statusCode,
+    this.responseBody,
+    required this.errorMessage,
+    required this.timestamp,
+  });
+
+  @override
+  String toString() => '''
+[Net Error] $timestamp
+$method $uri
+Headers: ${json.encode(headers)}
+Request Body: ${json.encode(requestBody)}
+Status: $statusCode
+Response: ${json.encode(responseBody)}
+Error: $errorMessage''';
 }
 
 class FileUploadError extends Error {

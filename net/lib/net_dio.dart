@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +9,10 @@ import 'interceptors/modify.dart';
 
 class Net2 {
   ValueSetter<NetCode>? errorHandler;
+  final _errorStreamController = StreamController<NetErrorEvent>.broadcast();
+  Stream<NetErrorEvent> get errorStream => _errorStreamController.stream;
+
+  void addError(NetErrorEvent event) => _errorStreamController.add(event);
 
   static final Net2 _instance = Net2._init();
 
