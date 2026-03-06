@@ -297,7 +297,7 @@ mixin RequestMixin {
     StreamController<T> controller,
     StreamSubscription<String> subscription,
   ) {
-    if (payload == '[DONE]') {
+    if (isSseStreamDone(payload)) {
       subscription.cancel();
       if (!controller.isClosed) controller.close();
       return true;
@@ -341,6 +341,16 @@ mixin RequestMixin {
     controller.addError(error, stackTrace);
     controller.close();
   }
+}
+
+@visibleForTesting
+bool isSseStreamDone(String payload) {
+  if (payload == '[DONE]') return true;
+  try {
+    final decoded = jsonDecode(payload);
+    if (decoded is Map && decoded['type'] == 'done') return true;
+  } catch (_) {}
+  return false;
 }
 
 @visibleForTesting

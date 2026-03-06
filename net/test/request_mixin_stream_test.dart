@@ -37,5 +37,39 @@ void main() {
       );
     });
   });
+
+  group('isSseStreamDone', () {
+    test('[DONE] literal returns true', () {
+      expect(isSseStreamDone('[DONE]'), isTrue);
+    });
+
+    test('{"type":"done"} JSON returns true', () {
+      expect(isSseStreamDone('{"type":"done"}'), isTrue);
+    });
+
+    test('{"type":"done","conversation_id":1} with extra fields returns true', () {
+      expect(isSseStreamDone('{"type":"done","conversation_id":1}'), isTrue);
+    });
+
+    test('{"type":"content","content":"hello"} returns false', () {
+      expect(isSseStreamDone('{"type":"content","content":"hello"}'), isFalse);
+    });
+
+    test('{"type":"error","error":"oops"} returns false', () {
+      expect(isSseStreamDone('{"type":"error","error":"oops"}'), isFalse);
+    });
+
+    test('{"type":"metadata"} returns false', () {
+      expect(isSseStreamDone('{"type":"metadata"}'), isFalse);
+    });
+
+    test('plain text returns false', () {
+      expect(isSseStreamDone('hello world'), isFalse);
+    });
+
+    test('empty string returns false', () {
+      expect(isSseStreamDone(''), isFalse);
+    });
+  });
 }
 
