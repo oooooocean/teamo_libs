@@ -132,8 +132,13 @@ mixin RequestMixin {
   }
 
   T _receiveError<T>(dynamic error) {
-    if ((error as DioException).response?.data != null) {
-      return _parse(error.response?.data, null);
+    final data = (error as DioException).response?.data;
+    if (data != null) {
+      if (data is Map<String, dynamic>) {
+        return _parse(data, null);
+      }
+      throw NetResponse(NetCode.unknownError, null)
+        ..message = data.toString();
     }
     if (error is TimeoutError) {
       throw error;

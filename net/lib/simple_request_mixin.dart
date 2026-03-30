@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'request_mixin.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'request_mixin.dart';
+import 'response.dart';
 
 typedef RequestChecker = String? Function();
 
@@ -19,7 +20,8 @@ mixin SimpleRequestMixin on RequestMixin {
       // 此时弹窗已经由其他业务弹出来了, 这里就不需要处理dismiss, 否则会导致其他业务页面弹框不正常
       needDismissByThisSession = false;
     }
-    return api().then((value) async {
+    try {
+      final value = await api();
       if (showSuccessTip) {
         EasyLoading.showSuccess('Success');
       } else if (needDismissByThisSession) {
@@ -27,6 +29,14 @@ mixin SimpleRequestMixin on RequestMixin {
       }
       if (success != null) success(value);
       return value;
-    });
+    } catch (error) {
+      if (needDismissByThisSession) {
+        await EasyLoading.dismiss();
+      }
+      final tip = failTip ?? (error is NetError ? error.message : '$error');
+      if (tip.isNotEmpty) EasyLoading.showToast(tip);
+      if (fail != null && error is Error) fail(error);
+      return null;
+    }
   }
 }
