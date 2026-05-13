@@ -1,6 +1,13 @@
 import 'dart:convert';
-import 'dart:developer';
+import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+// Debug 模式下同时输出到终端（debugPrint）和 DevTools（developer.log）
+void _log(String message) {
+  if (kDebugMode) debugPrint(message);
+  developer.log(message);
+}
 
 class Net2LogInterceptor extends Interceptor {
   @override
@@ -34,19 +41,19 @@ class Net2LogInterceptor extends Interceptor {
         str += '\nbody: <unserializable: $error>';
       }
     }
-    log(str);
+    _log(str);
   }
 
   /// 记录响应
   _logResponse(Response res) {
-    log("---- 响应 ----\npath: ${res.requestOptions.path}\ndata: ${_encodeSafely(res.data)}");
+    _log("---- 响应 ----\npath: ${res.requestOptions.path}\ndata: ${_encodeSafely(res.data)}");
   }
 
   /// 记录错误
   _logError(DioException exception) async {
     final message =
         "---- 😈响应错误😈 ----\npath: ${exception.requestOptions.path} statusCode: ${exception.response?.statusCode} response: ${_encodeSafely(exception.response?.data)} error: $exception";
-    log(message);
+    _log(message);
   }
 
   String _encodeSafely(dynamic data) {

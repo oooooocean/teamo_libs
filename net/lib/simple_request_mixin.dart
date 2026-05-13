@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'request_mixin.dart';
 import 'response.dart';
+import 'package:flutter/foundation.dart';
 
 typedef RequestChecker = String? Function();
 
@@ -32,6 +33,9 @@ mixin SimpleRequestMixin on RequestMixin {
     } catch (error) {
       if (needDismissByThisSession) {
         await EasyLoading.dismiss();
+      }
+      if (!kReleaseMode) {
+        // rethrow;
       }
       final tip = failTip ?? (error is NetError ? error.message : '$error');
       if (tip.isNotEmpty) EasyLoading.showToast(tip);
