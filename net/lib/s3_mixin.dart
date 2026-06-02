@@ -47,15 +47,17 @@ mixin S3Mixin {
   }
 
   String getFileUrlFromS3({required String fileName, String? bucket}) =>
-      'https://${bucket ?? "public-teamo-com"}.s3.amazonaws.com/$fileName';
+      'https://${(bucket != null && bucket.isNotEmpty) ? bucket : "public-teamo-com"}.s3.amazonaws.com/$fileName';
 
   String _getRandomFileName(String fileName, {String? prefix}) =>
       '${prefix ?? ''}${DateTime.now().millisecondsSinceEpoch}_${Random.secure().nextInt(1024)}_$fileName';
 
   Future<(List<String>, List<String>)> _getAwsKeys(List<String> fileNames, {String? bucket, String? prefix}) async {
     final filenames = fileNames.map((e) => _getRandomFileName(e, prefix: prefix)).toList();
+    // 同时防御 null 和空串; `??` 只覆盖 null, 空串会绕过默认值导致后端 boto3 报 Invalid bucket name ""
+    final effectiveBucket = (bucket != null && bucket.isNotEmpty) ? bucket : 'public-teamo-com';
     final urls = (await Net2().dio.post('file/url/',
-            data: {'fileNames': filenames, 'bucket': bucket ?? 'public-teamo-com'},
+            data: {'fileNames': filenames, 'bucket': effectiveBucket},
             options: Options(contentType: 'application/json')))
         .data['data'] as List<dynamic>;
     return (urls.cast<String>(), filenames);
