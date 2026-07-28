@@ -9,6 +9,10 @@ enum NetCode {
   clientError,
   @JsonValue(401)
   authFail,
+
+  /// 乐观锁冲突（资源已被他人修改）——调用方需提示用户重新加载，不能静默覆盖
+  @JsonValue(409)
+  conflict,
   @JsonValue(-1)
   unknownError;
 

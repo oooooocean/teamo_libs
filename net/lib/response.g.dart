@@ -23,5 +23,6 @@ const _$NetCodeEnumMap = {
   NetCode.success: 0,
   NetCode.clientError: 400,
   NetCode.authFail: 401,
+  NetCode.conflict: 409,
   NetCode.unknownError: -1,
 };
