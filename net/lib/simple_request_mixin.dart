@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'request_mixin.dart';
 import 'response.dart';
-import 'package:flutter/foundation.dart';
 
 typedef RequestChecker = String? Function();
 
@@ -34,11 +33,10 @@ mixin SimpleRequestMixin on RequestMixin {
       if (needDismissByThisSession) {
         await EasyLoading.dismiss();
       }
-      if (!kReleaseMode) {
-        // rethrow;
-      }
       final tip = failTip ?? (error is NetError ? error.message : '$error');
       if (tip.isNotEmpty) EasyLoading.showToast(tip);
+      // fail 的签名是 ValueSetter<Error>, 只有 Error 子类能透出去;
+      // NetError 继承自 Error, 业务错误正常送达, 非 Error 异常只走 toast
       if (fail != null && error is Error) fail(error);
       return null;
     }
