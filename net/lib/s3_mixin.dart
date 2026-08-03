@@ -8,6 +8,19 @@ const bucket = 'public-teamo-com';
 
 typedef UploadFileItem = ({Uint8List bytes, String fileName});
 
+/// 上传到 S3 失败
+///
+/// 必须抛出而非静默返回 key: 上传失败却把 key 存进业务数据, 会得到一条
+/// 永远打不开的链接, 且用户与服务端都毫不知情
+class S3UploadException implements Exception {
+  final List<String> fileNames;
+
+  S3UploadException(this.fileNames);
+
+  @override
+  String toString() => 'S3 upload failed: ${fileNames.join(', ')}';
+}
+
 mixin S3Mixin {
   Future<String> uploadFileToS3(
       {required Uint8List bytes, required String fileName, int count = 0, String? bucket, String? prefix}) async {
@@ -25,8 +38,9 @@ mixin S3Mixin {
     final keysAndNames = await _getAwsKeys([_getRandomFileName(fileName, prefix: prefix)], bucket: bucket);
     final key = keysAndNames.$1.first;
     // 2. 上传
-    final ret = _upload(key, data, 0, fileLength);
-    print('图片/文件上传结果: $ret');
+    final ok = await _upload(key, data, 0, fileLength);
+    print('图片/文件上传结果: $ok');
+    if (!ok) throw S3UploadException([fileName]);
     // 3. 返回文件名
     return keysAndNames.$2.first;
   }
@@ -35,13 +49,15 @@ mixin S3Mixin {
     // 1. 获取Key
     final keysAndNames = await _getAwsKeys(files.map((e) => e.fileName).toList(), bucket: bucket, prefix: prefix);
     final keys = keysAndNames.$1;
-    // 2. 上传
-    final futures = files.map((e) {
-      final index = files.indexOf(e);
-      return _upload(keys[index], e.bytes);
-    });
-    final ret = await Future.wait(futures);
+    // 2. 上传. 用下标而非 indexOf: 两个内容相同的 record 相等, indexOf 会取到同一个 key
+    final ret = await Future.wait(
+        [for (var i = 0; i < files.length; i++) _upload(keys[i], files[i].bytes)]);
     print('图片/文件上传结果: $ret');
+    final failed = [
+      for (var i = 0; i < ret.length; i++)
+        if (!ret[i]) files[i].fileName
+    ];
+    if (failed.isNotEmpty) throw S3UploadException(failed);
     // 3. 返回文件名
     return keysAndNames.$2;
   }
