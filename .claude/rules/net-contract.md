@@ -1,3 +1,8 @@
+---
+paths:
+  - "teamo_libs/**/*.dart"
+  - "teamo_helper/lib/**/*.dart"
+---
 # 网络契约（`teamo_libs/net`）
 
 > **触发条件**：改 `teamo_libs/net/lib/**` 的任何文件；新增 `NetCode` 成员；改 `_parse` / 拦截器 / 请求方法签名时。
