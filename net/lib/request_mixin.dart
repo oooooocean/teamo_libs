@@ -98,6 +98,33 @@ mixin RequestMixin {
         .catchError(_receiveError<T>, test: (error) => error is DioException);
   }
 
+  /// 拉二进制附件(xlsx / pdf 等)到内存 —— 走同一条带 JWT 的 Dio 链路
+  ///
+  /// 与 [download] 不同: 那条是甩给系统浏览器, 不带凭证, 受保护的接口拿不到文件。
+  /// 服务端出错时 body 仍是 `{code, message}` JSON, 但按 bytes 收下来会变成字节数组,
+  /// 先解回 Map 再走统一的 [_receiveError] 分支, 调用方拿到的仍是 [NetResponse]。
+  Future<Uint8List> getBytes(String uri, {Map<String, dynamic>? query}) async {
+    return _net
+        .get<dynamic>(uri,
+            queryParameters: _correctParameters(query), options: Options(responseType: ResponseType.bytes))
+        .then((res) => Uint8List.fromList((res.data as List<int>?) ?? const []))
+        .catchError((error) => _receiveError<Uint8List>(_decodeBytesErrorBody(error as DioException)),
+            test: (error) => error is DioException);
+  }
+
+  DioException _decodeBytesErrorBody(DioException error) {
+    final body = error.response?.data;
+    if (body is List<int> && body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(utf8.decode(body));
+        if (decoded is Map<String, dynamic>) error.response?.data = decoded;
+      } catch (_) {
+        // 不是 JSON 就原样交给 _receiveError 转成字符串
+      }
+    }
+    return error;
+  }
+
   /// 下载文件 - 直接使用系统浏览器下载
   /// 
   /// 打开系统浏览器，让浏览器处理文件下载
