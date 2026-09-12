@@ -40,6 +40,7 @@ paths:
 | debug 下 rethrow | `!kReleaseMode` 时解析异常**重新抛出**。所以调用方写 `catch (_) { continue; }` 会把它静默吞掉，表现为「接口 200 但 UI 卡住」——见 [`net-json-decode-casts.md`](../../../teamo_helper/.claude/rules/net-json-decode-casts.md) §2.5 |
 | 解码产物类型 | Dio 给的嵌套对象是 `_Map<dynamic, dynamic>`、数组是 `List<dynamic>`。**decoder 里禁止 `as Map<String, dynamic>`** |
 | 无 HTTP 缓存 | 拦截器只有 `Net2Interceptor`（改写）+ `Net2LogInterceptor`（日志），并发 `Cache-Control: no-cache`。**排查「第二次请求拿到旧数据」时不要怀疑本层** |
+| 附件文件名以服务端为准 | `getAttachment` 返回字节 + `Content-Disposition` 解出的文件名（`filename*=` 优先）。调用方落盘**直接沿用**，不另拼 —— 范围词 / 时刻只有服务端知道，App 自己拼 `Inventory <日期>` 就是「同一天导几次全同名」（issue teamo_helper#77）。`getBytes` 只是它的字节壳 |
 
 改 `_parse` 的错误处理分支时，**必须**同时确认 debug 与 release 两条路径的行为差异是有意的。
 

@@ -103,13 +103,31 @@ mixin RequestMixin {
   /// 与 [download] 不同: 那条是甩给系统浏览器, 不带凭证, 受保护的接口拿不到文件。
   /// 服务端出错时 body 仍是 `{code, message}` JSON, 但按 bytes 收下来会变成字节数组,
   /// 先解回 Map 再走统一的 [_receiveError] 分支, 调用方拿到的仍是 [NetResponse]。
-  Future<Uint8List> getBytes(String uri, {Map<String, dynamic>? query}) async {
+  Future<Uint8List> getBytes(String uri, {Map<String, dynamic>? query}) =>
+      getAttachment(uri, query: query).then((a) => a.bytes);
+
+  /// 带 JWT 拉附件：字节 + 服务端 `Content-Disposition` 里的文件名。
+  /// 文件名以服务端为唯一真相源（范围词 / 时刻都在里面），调用方落盘直接沿用；
+  /// 服务端没给时 [NetAttachment.filename] 为 null，由调用方兜底。
+  Future<NetAttachment> getAttachment(String uri, {Map<String, dynamic>? query}) async {
     return _net
         .get<dynamic>(uri,
             queryParameters: _correctParameters(query), options: Options(responseType: ResponseType.bytes))
-        .then((res) => Uint8List.fromList((res.data as List<int>?) ?? const []))
-        .catchError((error) => _receiveError<Uint8List>(_decodeBytesErrorBody(error as DioException)),
+        .then((res) => NetAttachment(
+              Uint8List.fromList((res.data as List<int>?) ?? const []),
+              _dispositionFilename(res.headers.value('content-disposition')),
+            ))
+        .catchError((error) => _receiveError<NetAttachment>(_decodeBytesErrorBody(error as DioException)),
             test: (error) => error is DioException);
+  }
+
+  /// `attachment; filename="x.xlsx"` → `x.xlsx`；优先 RFC 5987 的 `filename*=UTF-8''...`
+  static String? _dispositionFilename(String? header) {
+    if (header == null) return null;
+    final ext = RegExp(r"filename\*=(?:UTF-8|utf-8)''([^;]+)").firstMatch(header);
+    if (ext != null) return Uri.decodeComponent(ext.group(1)!.trim());
+    final plain = RegExp(r'filename="?([^";]+)"?').firstMatch(header);
+    return plain?.group(1)?.trim();
   }
 
   DioException _decodeBytesErrorBody(DioException error) {
@@ -415,4 +433,14 @@ String? extractSsePayload(String rawEvent) {
   }
 
   return payloadLines.join('\n');
+}
+
+/// [RequestMixin.getAttachment] 的结果
+class NetAttachment {
+  final Uint8List bytes;
+
+  /// 服务端 `Content-Disposition` 里的文件名；没给为 null
+  final String? filename;
+
+  const NetAttachment(this.bytes, this.filename);
 }
